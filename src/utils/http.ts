@@ -10,7 +10,7 @@ const http ={
      * https://juejin.cn/post/7100814332685975588#heading-6
      * https://blog.csdn.net/GeniusXYT/article/details/104402757
      */
-    get(url:string,params:string){
+    get(url:string,params:any){
         const config = {
             method: 'get',
             url:url,
@@ -19,7 +19,7 @@ const http ={
         if(params) config.params = params
         return request(config)
     },
-    post(url:string,params:string){
+    post(url:string,params:any){
         const config = {
             method: 'post',
             url:url,
@@ -28,7 +28,7 @@ const http ={
         if(params) config.data = params
         return request(config)
     },
-    put(url:string,params:string){
+    put(url:string,params:any){
         const config = {
             method: 'put',
             url:url,
@@ -37,7 +37,7 @@ const http ={
         if(params) config.params = params
         return request(config)
     },
-    delete(url:string,params:string){
+    delete(url:string,params:any){
         const config = {
             method: 'delete',
             url:url,
