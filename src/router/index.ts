@@ -4,6 +4,8 @@ import storage from "@/utils/storage";
 import store from "@/store";
 import LoginView from "@/views/LoginView.vue"
 import RegisterView from "@/views/RegisterView.vue"
+import ForgetView from "@/views/ForgetView.vue"
+
 
 
 const routes: Array<RouteRecordRaw> = [
@@ -27,6 +29,20 @@ const routes: Array<RouteRecordRaw> = [
     // this generates a separate chunk (about.[hash].js) for this route
     // which is lazy-loaded when the route is visited.
     component: RegisterView,
+  },
+  {
+    path: '/forget',
+    name: 'forget',
+    // route level code-splitting
+    // this generates a separate chunk (about.[hash].js) for this route
+    // which is lazy-loaded when the route is visited.
+    component: ForgetView,
+  },
+  {
+    path: '/home',
+    name: 'home',
+    component: HomeView,
+
   }
 ]
 
@@ -54,7 +70,7 @@ router.beforeEach((to, from, next) => {
       });
     }
   } else {
-    next(); //如果无需token,那么随它去吧
+    next(); //无需token
   }
 });
 export default router

@@ -1,70 +1,67 @@
 <template>
-  <div class="register">
-    <div class="register-warp" style="border-radius: 10px">
-      <el-row type="flex" justify="center" v-loading="isload">
-        <el-form :model="ruleForm" label-width="auto" status-icon ref="ruleForm" >
-          <h2>注册</h2>
-          <hr>
-          <el-form-item prop="username" :rules="rules.username">
-            <template v-slot:label>
-              <span style="color:red">*</span>
-              <span>账号</span>
-            </template>
-            <el-input v-model="ruleForm.username" autocomplete="off"></el-input>
-          </el-form-item>
-          <el-form-item prop="password" :rules="rules.password">
-            <template v-slot:label>
-              <span style="color:red">*</span>
-              <span>密码</span>
-            </template>
-            <el-input v-model="ruleForm.password" autocomplete="off"
-                      placeholder="8-20位且包含字符和数字"
-                      type="password">
-            </el-input>
-          </el-form-item>
-          <el-form-item prop="password2" >
-            <template v-slot:label>
-              <span style="color:red">*</span>
-              <span>重复密码</span>
-            </template>
-            <el-input v-model="ruleForm.password2" type="password" autocomplete="off"></el-input>
-          </el-form-item>
-          <el-form-item prop="email"  :rules="rules.email">
-            <template v-slot:label>
-              <span style="color:red">*</span>
-              <span>邮箱</span>
-            </template>
-            <el-input v-model="ruleForm.email" autocomplete="off"></el-input>
-          </el-form-item>
-          <el-form-item>
-            <template v-slot:label>
-              <span style="color:red">*</span>
-              <span>性别</span>
-            </template>
-            <el-radio-group v-model="ruleForm.gender" >
-              <el-radio label="男" size="large">男</el-radio>
-              <el-radio label="女" size="large">女</el-radio>
-            </el-radio-group>
-          </el-form-item>
-          <el-button type="primary" @click="register('ruleForm')">注册</el-button>
-        </el-form>
-      </el-row>
-      <router-link to="/login"
-                   style="color: cornflowerblue;
-                   float: right; margin-right: 20px"
-      >
-        返回登录
-      </router-link>
-    </div>
+<div id="main">
+  <div id="forget-wrap" style="border-radius: 10px">
+    <el-row type="flex" justify="center" v-loading="isload">
+  <el-form :model="ruleForm" status-icon ref="ruleForm" label-width="auto" >
+    <h2 style="height: 25px">重置密码</h2>
+    <hr>
+    <el-form-item prop="username" :rules="rules.username">
+      <template v-slot:label>
+        <span style="color:red">*</span>
+        <span>账号</span>
+      </template>
+      <el-input v-model="ruleForm.username" autocomplete="off"></el-input>
+    </el-form-item>
+    <el-form-item prop="email"  :rules="rules.email">
+      <template v-slot:label>
+        <span style="color:red">*</span>
+        <span>个人邮箱</span>
+      </template>
+      <el-input v-model="ruleForm.email" autocomplete="off"></el-input>
+    </el-form-item>
+    <el-form-item prop="password" :rules="rules.password">
+      <template v-slot:label>
+        <span style="color:red">*</span>
+        <span>新密码</span>
+      </template>
+      <el-input v-model="ruleForm.password" autocomplete="off"
+                placeholder="8-20位且包含字符和数字"
+                type="password">
+      </el-input>
+    </el-form-item>
+    <el-form-item prop="password2" >
+      <template v-slot:label>
+        <span style="color:red">*</span>
+        <span>重复密码</span>
+      </template>
+      <el-input v-model="ruleForm.password2" type="password" autocomplete="off"></el-input>
+    </el-form-item>
+
+    <el-form-item >
+      <span style="float: left;width: 15%">&ensp;</span>
+      <el-button type="primary" @click="this.$router.push('/login')">返回登陆</el-button>
+      <span style="float: left;width: 20%">&ensp;</span>
+      <el-button type="primary" @click="submitForm('ruleForm')">重置</el-button>
+    </el-form-item>
+    <!--          <el-form-item style="margin-top: 15px">-->
+    <!--            <p></p>-->
+    <!--            <el-button type="primary" @click="submitForm('ruleForm')">登录</el-button>-->
+    <!--            <el-button type="primary" @click="this.$router.push('/register')">注册</el-button>-->
+    <!--          </el-form-item>-->
+  </el-form>
+    </el-row>
   </div>
+</div>
 </template>
 
 <script>
-import { registerAPI } from '@/api/login'
-import storage from '@/utils/storage'
+import {forgetAPI, loginAPI} from "@/api/login";
+import storage from "@/utils/storage";
+import Cookies from 'js-cookie'
+
 
 export default {
-  name: 'RegisterView',
+  name: "ForgetView",
   data () {
     const validateUsername = (rule, value, callback) => {
       if (value === '') {
@@ -114,7 +111,6 @@ export default {
         password: '',
         password2: '',
         email: '',
-        gender: '男'
       },
       isload: false,
       rules: {
@@ -134,23 +130,26 @@ export default {
     }
   },
   methods: {
-    register (formName) {
+    submitForm (formName) {
       this.$refs[formName].validate((valid) => {
         if (valid) {
-          this.isload = true
           const account = {
             name: this.ruleForm.username,
             password: this.ruleForm.password,
-            email: this.ruleForm.email,
-            gender: this.ruleForm.gender
+            email: this.ruleForm.email
           }
-
-          registerAPI(account).then(
+          this.isload = true
+          forgetAPI(account).then(
               (res) => {
                 let data = res.data
                 if (data.success) {
-                  this.$message.success('注册成功')
-                  this.$router.push('/login')
+                  this.$message.success('重置密码成功')
+                  //根据store中set_token方法将token保存至localStorage/sessionStorage中，data["Authentication-Token"]，获取token的value值
+                  //this.$store.commit('set_token', data.data['token'])
+                  //storage.set("token", data.data['token'])
+                  this.$router.push({path: '/login'})
+                  Cookies.set('name', null, -1);
+                  Cookies.set('password', null, -1);
                 }else {
                   this.$message.error(data.message)
                 }
@@ -158,30 +157,23 @@ export default {
               }
           ).catch(
               (error) => {
-                this.isload = false
                 this.$message.error(error.message)
                 // console.log(error)
-                return false
+                this.isload = false
               }
           )
         } else {
-          console.log('格式错误！')
+          console.log('error submit!!')
           return false
         }
       })
-    },
-    resetForm (formName) {
-      this.$refs[formName].resetFields()
     }
-  },
-  mounted: function () {
-    document.title = '注册'
   }
 }
 </script>
 
 <style scoped>
-.register{
+#main{
   width: 100%;
   height: 100vh;
   background: url("../assets/login_back.png");
@@ -190,10 +182,10 @@ export default {
   top: 0;
   left: 0;
 }
-.register-warp{
+#forget-wrap{
   background-size: cover;
   width: 400px;
-  height: 45vh;
+  height: 40vh;
   margin-inline: auto;
   margin-top: 20vh;
   overflow: hidden;

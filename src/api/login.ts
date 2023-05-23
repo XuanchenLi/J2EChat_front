@@ -7,7 +7,7 @@ import http from '@/utils/http'
 let request = "/testIp/"
 
 export function loginAPI (data:any) {
-    return http.post(`${request}/user/login`, data)
+    return http.post(`${request}/LoginServlet`, data)
 }
 
 export function registerAPI (params:any) {
@@ -22,4 +22,12 @@ export function registerAPI (params:any) {
 
 export function logoutAPI() {
     return http.get(`${request}/user/logout`, "")
+}
+
+export function forgetAPI(params:any) {
+    return http.post(`${request}/ForgetServlet`, params)
+}
+
+export function updateUserAPI(params: any) {
+    return http.post(`${request}/UpdateUserServlet`, params)
 }

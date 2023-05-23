@@ -1,6 +1,7 @@
 <template>
   <div class="LoginView">
     <div class="login-warp" style="border-radius: 10px">
+      <el-row type="flex" justify="center" v-loading="isload">
       <el-form v-loading="isload" :model="ruleForm" status-icon :rules="rules" ref="ruleForm" label-width="auto">
         <h2 style="height: 25px">登录</h2>
         <hr>
@@ -20,7 +21,7 @@
           <span style="float: left;width: 20px">&ensp;</span>
           <el-button type="primary" @click="this.$router.push('/register')">注册</el-button>
           <span style="float: left;width: 20px">&ensp;</span>
-          <el-button type="primary" @click="this.$router.push('/register')">忘记密码</el-button>
+          <el-button type="primary" @click="this.$router.push('/forget')">忘记密码</el-button>
         </el-form-item>
         <!--          <el-form-item style="margin-top: 15px">-->
         <!--            <p></p>-->
@@ -28,13 +29,15 @@
         <!--            <el-button type="primary" @click="this.$router.push('/register')">注册</el-button>-->
         <!--          </el-form-item>-->
       </el-form>
+      </el-row>
     </div>
   </div>
 </template>
 
 <script>
 import { loginAPI } from '@/api/login'
-import storage from '@/utils/storage'
+import Cookies from 'js-cookie'
+import storage, {sessionStorage} from '@/utils/storage'
 import store from '@/store'
 import {defineComponent} from "vue";
 export default defineComponent({
@@ -58,53 +61,32 @@ export default defineComponent({
     }
   },
   methods: {
-    // // 设置cookie,登录成功之后进行调用 传入账号名，密码，和保存天数3个参数
-    // setCookie(name, pwd, exdays) {
-    //   var exdate = new Date() // 获取时间
-    //   exdate.setTime(exdate.getTime() + 24 * 60 * 60 * 1000 * exdays) // 保存的天数
-    //   // 字符串拼接cookie
-    //   window.document.cookie =
-    //       'userName' + '=' + this.ruleForm.account + ';path=/;expires=' + exdate.toGMTString()
-    //   window.document.cookie =
-    //       'userPwd' + '=' + this.ruleForm.password + ';path=/;expires=' + exdate.toGMTString()
-    // },
-    // // 读取cookie 将用户名和密码回显到input框中
-    // getCookie() {
-    //   if (document.cookie.length > 0) {
-    //     this.rememberMe = true
-    //     var arr = document.cookie.split('; ') //
-    //     for (var i = 0; i < arr.length; i++) {
-    //       var arr2 = arr[i].split('=') // 再次切割
-    //       // 判断查找相对应的值
-    //       if (arr2[0] === 'userName') {
-    //         this.ruleForm.account = arr2[1]  // 保存到保存数据的地方即v-model
-    //       } else if (arr2[0] === 'userPwd') {
-    //         this.ruleForm.password = arr2[1]
-    //       }
-    //     }
-    //   }
-    // },
     submitForm (formName) {
       this.$refs[formName].validate((valid) => {
         if (valid) {
           const account = {
-            username: this.ruleForm.account,
+            name: this.ruleForm.account,
             password: this.ruleForm.password
           }
           this.isload = true
           loginAPI(account).then(
               (res) => {
-                console.log(res.data);
+                console.log(res.data.data)
                 let data = res.data
                 if (data.success) {
                   this.$message.success('登录成功')
                   //根据store中set_token方法将token保存至localStorage/sessionStorage中，data["Authentication-Token"]，获取token的value值
-                  this.$store.commit('set_token', data.data['token'])
-                  storage.set("token", data.data['token'])
-                  console.log(storage.get("token"))
+                  //this.$store.commit('set_token', data.data['token'])
+                  //storage.set("token", data.data['token'])
+                  //console.log(storage.get("token"))
                   if (this.rememberMe) {
-                    this.setCookie()
+                    Cookies.set('name', this.ruleForm.account, 3)
+                    Cookies.set('password', this.ruleForm.password, 3)
+                  }else {
+                    Cookies.set('name', null, -1)
+                    Cookies.set('password', null, -1)
                   }
+                  sessionStorage.set("profile", data.data)
                   this.$router.push({path: '/home'})
                 }else {
                   this.$message.error(data.message)
@@ -127,7 +109,13 @@ export default defineComponent({
   },
   mounted: function () {
     document.title = '登录'
-
+    let name = Cookies.get('name')
+    let password = Cookies.get('password')
+    if (name != null && password != null) {
+      this.rememberMe = true
+      this.ruleForm.account = name
+      this.ruleForm.password = password
+    }
     // this.getCookie();
   }
 })

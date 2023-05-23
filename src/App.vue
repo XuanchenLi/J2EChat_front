@@ -20,7 +20,7 @@ export default {
   color: #2c3e50;
   margin: auto;
   padding:0;
-  height: 600px;
+  height: 100vh;
 }
 html,body{
   margin:0;
