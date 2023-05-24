@@ -89,13 +89,13 @@ export default defineComponent({
                   sessionStorage.set("profile", data.data)
                   this.$router.push({path: '/home'})
                 }else {
-                  this.$message.error(data.message)
+                  this.$message.error("用户名或密码错误")
                 }
                 this.isload = false
               }
           ).catch(
               (error) => {
-                this.$message.error(error.message)
+                this.$message.error("用户名或密码错误")
                 // console.log(error)
                 this.isload = false
               }

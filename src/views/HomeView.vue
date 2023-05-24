@@ -20,20 +20,24 @@
 
             </el-row>
           </el-header>
-          <el-main style="padding: 0px;">
-            <div class="infinite-list-wrapper" style="overflow: auto">
-              <ul
-                  v-infinite-scroll="load"
-                  class="list"
-                  :infinite-scroll-disabled="disable_load"
+          <el-main style="padding: 0px;" v-loading="entryListLoad">
+            <el-row v-for="i in entries" class="entry-list-item-wrapper" type="flex" justify="center" align="middle">
+              <el-button class="entry-list-item" color="#626aef" :dark="true"
+                        @click="viewHistory(i.id, $event)"
               >
-                <el-row v-for="i in count" :key="i" type="flex" justify="center" align="middle" >
-                  <el-button class="list-item" color="#626aef" :dark="true">{{ i }}</el-button>
-                </el-row>
-              </ul>
-              <p v-if="loading" style="color: white">Loading...</p>
-              <p v-if="noMore" style="color: white"> No more</p>
-            </div>
+              <el-row type="flex" justify="start" align="middle" style="width: 100%" gutter="10">
+                  <el-col span="4">
+                    <el-icon>
+                      <ChatSquare/>
+                    </el-icon>
+                  </el-col>
+                  <el-col span="16">
+                    {{i.brief}}
+                  </el-col>
+              </el-row>
+              </el-button>
+            </el-row>
+
           </el-main>
           <el-footer style="padding: 0px">
             <el-row type="flex" justify="center" align="middle" style="height: 100%;">
@@ -62,27 +66,31 @@
           </el-footer>
         </el-container>
       </el-aside>
-      <el-main class="main-block">
+      <el-main class="main-block" v-loading="mainLoad">
         <el-row class="chat-block" type="flex" justify="center" align="middle">
-          <el-row v-for="i in count" class="chat-list-item-wrapper" type="flex" justify="center" align="middle">
+          <el-row v-for="i in items" class="chat-list-item-wrapper" type="flex" justify="center" align="middle">
             <el-card  class="chat-list-item">
               <template #header>
                 <div class="card-header">
-                  <span style="border-color: transparent">Card name</span>
+                  <span style="border-color: transparent">
+                    <el-icon>
+                      <Cpu v-if="i.from=='AI'"/>
+                      <UserFilled v-if="i.from!='AI'"/>
+                    </el-icon>
+                    <span>&nbsp;</span>
+                    {{ i.from }}
+                  </span>
                 </div>
               </template>
-              {{ i }}
+              <div class="content">
+                {{ i.content }}
+              </div>
             </el-card>
           </el-row>
         </el-row>
         <el-row class="btn-block" type="flex" justify="center" align="middle">
-          <el-button size="large" color="#626aef">
-            结束对话并评价
-            <span>&nbsp</span>
-            <el-icon>
-              <Star></Star>
-            </el-icon>
-          </el-button>
+          <span style="color: white">结束对话并评价&nbsp</span>
+          <el-rate v-model="grade" />
         </el-row>
         <el-row class="input-block" type="flex" justify="center" align="middle">
             <el-form :model="ruleForm" ref="ruleForm" :rules="rules" style="width: 70%">
@@ -91,7 +99,7 @@
                           style="width: 100%;background-color: transparent" placeholder="发送消息"
                           autosize
                           size="large"
-
+                          :disabled="disableInput"
                 >
                   <template #suffix>
                     <el-icon class="el-input__icon" size="large"><ChatDotRound /></el-icon>
@@ -142,14 +150,18 @@
 <script >
 import { defineComponent } from 'vue';
 import HelloWorld from '@/components/HelloWorld.vue';
-import {Plus, ChatDotRound} from "@element-plus/icons";
+import {Plus, ChatDotRound, ChatSquare, Cpu, UserFilled} from "@element-plus/icons";
 import {sessionStorage} from "@/utils/storage";
 import {loginAPI, updateUserAPI} from "@/api/login";
-import Cookies from "js-cookie"; // @ is an alias to /src
+import Cookies from "js-cookie";
+import {getChatEntryAPI, getChatItemAPI} from "@/api/chat"; // @ is an alias to /src
 
 export default defineComponent({
   name: 'HomeView',
   components: {
+    UserFilled,
+    Cpu,
+    ChatSquare,
     ChatDotRound,
     Plus,
     HelloWorld,
@@ -168,12 +180,14 @@ export default defineComponent({
       callback()
     }
     return {
-      count: 10,
+      grade: 0,
+      disableInput: false,
       loading: false,
       profileLoad:false,
       noMore: false,
       disable_load: false,
       openProfile: false,
+      mainLoad: false,
       ruleForm: {
         message: ''
       },
@@ -191,7 +205,10 @@ export default defineComponent({
         email: [
           { validator: validateEmail, trigger: 'blur' }
         ],
-      }
+      },
+      entryListLoad: false,
+      entries: [],
+      items: []
 
     }
   },
@@ -256,6 +273,28 @@ export default defineComponent({
     openProfileBtn(event) {
       this.myBlur(event)
       this.openProfile = true
+    },
+    viewHistory(id, event) {
+      this.myBlur(event)
+      this.mainLoad = true
+      getChatItemAPI(id).then(
+          (res) => {
+            console.log(res)
+            let data = res.data
+            if (data.success) {
+              this.items = res.data.data
+            }else {
+              this.$message.error(data.message)
+            }
+            this.mainLoad = false
+          }
+      ).catch(
+          (error) => {
+            this.$message.error(error.message)
+            // console.log(error)
+            this.mainLoad  = false
+          }
+      )
     }
   },
   mounted() {
@@ -263,6 +302,25 @@ export default defineComponent({
     this.profileForm.name = jsonProfile.name
     this.profileForm.email = jsonProfile.email
     this.profileForm.gender = jsonProfile.gender
+    this.entryListLoad = true
+    getChatEntryAPI(jsonProfile.id).then(
+        (res) => {
+          console.log(res)
+          let data = res.data
+          if (data.success) {
+            this.entries = res.data.data
+          }else {
+            this.$message.error(data.message)
+          }
+          this.entryListLoad = false
+        }
+    ).catch(
+        (error) => {
+          this.$message.error(error.message)
+          // console.log(error)
+          this.entryListLoad  = false
+        }
+    )
   }
 });
 </script>
@@ -298,28 +356,26 @@ export default defineComponent({
   height: 15vh;
   background-color: #1b202d;
 }
-.infinite-list-wrapper {
-  height: 100%;
-  text-align: center;
-}
-.infinite-list-wrapper .list {
+.entry-list-item-wrapper {
+  width: 100%;
   padding: 0;
-  margin: 0;
+  margin-bottom: 5px;
   list-style: none;
 }
-
-.infinite-list-wrapper .list-item {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 50px;
+.entry-list-item {
   width: 100%;
-  background: transparent;
-  color:white;
+  border-radius: 0px;
+  background-color: transparent;
+  padding: 0;
+  margin: 0;
+  font-size: medium;
+  list-style: none;
 }
-.infinite-list-wrapper .list-item + .list-item {
-  margin-top: 10px;
+/deep/.entry-list-item span {
+  margin-left: 5%;
+  width: 100%;
 }
+
 /*.chat-list {*/
 /*  padding: 0;*/
 /*  margin: 0;*/
@@ -344,11 +400,21 @@ export default defineComponent({
   width: 100%;
   border-radius: 0px;
   background-color: transparent;
-  border-color: transparent;
-  border: 0px;
+  border: 0px transparent;
+}
+.content {
+  background-color: #4a4c5e;
+  border-radius: 3px;
+  margin-left: 10%;
+  width: 80%;
+  text-align: left;
+  white-space: pre-line;
 }
 /deep/.el-card {
   --el-card-border-color:transparent !important;
+}
+/deep/.el-card__body {
+  padding: 0px;
 }
 /deep/.el-input__wrapper{
   background-color: transparent !important;

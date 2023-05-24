@@ -21,7 +21,7 @@ export function registerAPI (params:any) {
 }
 
 export function logoutAPI() {
-    return http.get(`${request}/user/logout`, "")
+    return http.get(`${request}/user/logout`)
 }
 
 export function forgetAPI(params:any) {

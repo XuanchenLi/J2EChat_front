@@ -10,13 +10,11 @@ const http ={
      * https://juejin.cn/post/7100814332685975588#heading-6
      * https://blog.csdn.net/GeniusXYT/article/details/104402757
      */
-    get(url:string,params:any){
+    get(url:string){
         const config = {
             method: 'get',
             url:url,
-            params: ""
         }
-        if(params) config.params = params
         return request(config)
     },
     post(url:string,params:any){
