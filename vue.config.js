@@ -29,9 +29,32 @@ module.exports = defineConfig({
         secure: false,
         pathRewrite: {
           "^/testIp": "/"
+        },
+        cookiePathRewrite: {
+          '*': '/'
+        },
+        onProxyRes(proxyRes, req, res) {
+          var oldCookie = proxyRes.headers['set-cookie']
+          if (oldCookie == null || oldCookie.length == 0) {
+            delete proxyRes.headers['set-cookie']
+            return
+          }
+
+          var oldCookieItems = oldCookie[0].split(';')
+          var newCookie = ''
+          for(var i=0; i < oldCookieItems.length; ++i){
+            if(newCookie.length >0)
+              newCookie += ';'
+            if(oldCookieItems[i].indexOf('Path=') >= 0)
+              newCookie += 'Path=/'
+            else
+              newCookie += oldCookieItems[i]
+          }
+          proxyRes.headers['set-cookie'] = [newCookie]
         }
       }
-    }
+      },
+
 
   }
 })

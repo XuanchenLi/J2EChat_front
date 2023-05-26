@@ -5,12 +5,14 @@ import axios, {AxiosRequestHeaders} from 'axios'
 import { ElMessage } from 'element-plus';
 import store from '@/store'
 //1. 创建新的axios实例，
+axios.defaults.withCredentials = true;
 const service = axios.create({
     // 公共接口--这里注意后面会讲
     // baseURL: 'http://localhost:8088/api',
     baseURL: '',
     // 超时时间 单位是ms
-    timeout: 10000
+    timeout: 10000,
+    withCredentials: true,
 })
 // 2.请求拦截器
 service.interceptors.request.use(config => {

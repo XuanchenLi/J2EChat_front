@@ -13,3 +13,15 @@ export function getChatEntryAPI (params:any) {
 export function getChatItemAPI (params:any) {
     return http.get(`${request}/GetChatItemServlet?cId=${params}`)
 }
+
+export function fetchAnswerAPI(params: any) {
+    return http.post(`${request}/SendMessageServlet`, params)
+}
+
+export function cancelChatAPI(params: any) {
+    return http.post(`${request}/CancelChatServlet`, params)
+}
+
+export function retriveChatAPI () {
+    return http.get(`${request}/RetriveMsgServlet`)
+}

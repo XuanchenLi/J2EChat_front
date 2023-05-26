@@ -10,7 +10,9 @@
           <el-header  style="padding: 1px">
             <el-row type="flex" justify="center" align="middle" style="height: 100%;">
               <el-button color="#626aef" style="width: 90%;height:80%;color: white;font-size: large"
-                         size="large;" @click="newChat($event) ">
+                         size="large;" @click="newChat($event) "
+                         :disabled="disableNew"
+              >
                 <el-icon color="white">
                   <Plus />
                 </el-icon>
@@ -23,7 +25,7 @@
           <el-main style="padding: 0px;" v-loading="entryListLoad">
             <el-row v-for="i in entries" class="entry-list-item-wrapper" type="flex" justify="center" align="middle">
               <el-button class="entry-list-item" color="#626aef" :dark="true"
-                        @click="viewHistory(i.id, $event)"
+                        @click="viewHistory(i.id, $event);this.grade=i.grade"
               >
               <el-row type="flex" justify="start" align="middle" style="width: 100%" gutter="10">
                   <el-col span="4">
@@ -31,9 +33,12 @@
                       <ChatSquare/>
                     </el-icon>
                   </el-col>
-                  <el-col span="16">
-                    {{i.brief}}
+                  <el-col span="16" v-if="i.brief.length > 25">
+                    {{i.brief.slice(0, 25)}}...
                   </el-col>
+                <el-col span="16" v-if="i.brief.length <= 25">
+                  {{i.brief}}
+                </el-col>
               </el-row>
               </el-button>
             </el-row>
@@ -53,10 +58,17 @@
                   <el-col :span="8" style="text-align: left;font-size: 18px">
                     Profile
                   </el-col>
-                  <el-col :span="8" >
+                  <el-col :span="4" >
                     <el-button style="background-color: transparent;border: 0px" @click="openProfileBtn($event)">
                       <el-icon color="white" size="30px">
                         <Edit />
+                      </el-icon >
+                    </el-button>
+                  </el-col>
+                  <el-col :span="4" >
+                    <el-button style="background-color: transparent;border: 0px" @click="Return">
+                      <el-icon color="white" size="30px">
+                        <SwitchButton />
                       </el-icon >
                     </el-button>
                   </el-col>
@@ -67,15 +79,15 @@
         </el-container>
       </el-aside>
       <el-main class="main-block" v-loading="mainLoad">
-        <el-row class="chat-block" type="flex" justify="center" align="middle">
+        <div class="chat-block" type="flex" justify="center" ref="chatBlock">
           <el-row v-for="i in items" class="chat-list-item-wrapper" type="flex" justify="center" align="middle">
             <el-card  class="chat-list-item">
               <template #header>
                 <div class="card-header">
                   <span style="border-color: transparent">
                     <el-icon>
-                      <Cpu v-if="i.from=='AI'"/>
-                      <UserFilled v-if="i.from!='AI'"/>
+                      <Cpu v-if="i.from=='ChatJ2E'"/>
+                      <UserFilled v-if="i.from!='ChatJ2E'"/>
                     </el-icon>
                     <span>&nbsp;</span>
                     {{ i.from }}
@@ -87,19 +99,23 @@
               </div>
             </el-card>
           </el-row>
-        </el-row>
+        </div>
         <el-row class="btn-block" type="flex" justify="center" align="middle">
-          <span style="color: white">结束对话并评价&nbsp</span>
-          <el-rate v-model="grade" />
+          <span v-if="!disableInput" style="color: white">结束对话并评价&nbsp</span>
+          <el-rate :disabled="disableInput" v-model="this.grade" @click="rateChat"/>
         </el-row>
         <el-row class="input-block" type="flex" justify="center" align="middle">
-            <el-form :model="ruleForm" ref="ruleForm" :rules="rules" style="width: 70%">
+            <el-form :model="ruleForm" ref="ruleForm" :rules="rules"
+                     style="width: 70%"
+                     @submit.native.prevent
+            >
               <el-form-item prop="message" style="width: 100%">
                 <el-input v-model="ruleForm.message" autocomplete="off"
                           style="width: 100%;background-color: transparent" placeholder="发送消息"
                           autosize
                           size="large"
                           :disabled="disableInput"
+                          @keyup.enter.native="fetchAnswer()"
                 >
                   <template #suffix>
                     <el-icon class="el-input__icon" size="large"><ChatDotRound /></el-icon>
@@ -150,15 +166,16 @@
 <script >
 import { defineComponent } from 'vue';
 import HelloWorld from '@/components/HelloWorld.vue';
-import {Plus, ChatDotRound, ChatSquare, Cpu, UserFilled} from "@element-plus/icons";
+import {Plus, ChatDotRound, ChatSquare, Cpu, UserFilled, SwitchButton} from "@element-plus/icons";
 import {sessionStorage} from "@/utils/storage";
 import {loginAPI, updateUserAPI} from "@/api/login";
 import Cookies from "js-cookie";
-import {getChatEntryAPI, getChatItemAPI} from "@/api/chat"; // @ is an alias to /src
+import {cancelChatAPI, fetchAnswerAPI, getChatEntryAPI, getChatItemAPI, retriveChatAPI} from "@/api/chat"; // @ is an alias to /src
 
 export default defineComponent({
   name: 'HomeView',
   components: {
+    SwitchButton,
     UserFilled,
     Cpu,
     ChatSquare,
@@ -181,6 +198,7 @@ export default defineComponent({
     }
     return {
       grade: 0,
+      disableNew: false,
       disableInput: false,
       loading: false,
       profileLoad:false,
@@ -253,13 +271,6 @@ export default defineComponent({
         }
       })
     },
-    load() {
-      this.count+=2
-      if (this.count >20) {
-        this.noMore = true
-        this.disable_load = this.loading || this.noMore
-      }
-    },
     myBlur(event) {
       let tar = event.target
       while (tar.nodeName !== "BUTTON") {
@@ -269,6 +280,9 @@ export default defineComponent({
     },
     newChat(event) {
       this.myBlur(event)
+      this.items = []
+      this.grade = 0
+      this.disableInput = false
     },
     openProfileBtn(event) {
       this.myBlur(event)
@@ -277,6 +291,7 @@ export default defineComponent({
     viewHistory(id, event) {
       this.myBlur(event)
       this.mainLoad = true
+      this.disableInput = true
       getChatItemAPI(id).then(
           (res) => {
             console.log(res)
@@ -295,6 +310,75 @@ export default defineComponent({
             this.mainLoad  = false
           }
       )
+    },
+    fetchAnswer() {
+      let pack= {
+        uId: this.profileForm.id,
+        name: this.profileForm.name,
+        msg: this.ruleForm.message
+      }
+      let item0= {
+        from: this.profileForm.name,
+        to: "AI",
+        content: this.ruleForm.message,
+      }
+      this.items.push(item0)
+      this.$refs.chatBlock.scrollTop = this.$refs.chatBlock.scrollHeight
+      fetchAnswerAPI(pack).then(
+          (res) => {
+
+            let data = res.data
+            if (data.success) {
+              this.items.push(data.data)
+              this.$nextTick(function(){
+                this.$refs.chatBlock.scrollTop = this.$refs.chatBlock.scrollHeight
+
+              })
+            }else {
+              this.$message.error(data.message)
+
+            }
+          }
+      ).catch(
+          (error) => {
+            this.$message.error(error.message)
+          }
+      )
+      this.ruleForm.message = ""
+    },
+    rateChat() {
+      if (this.disableInput) return
+      this.disableInput = true
+      let jsonProfile = sessionStorage.get("profile")
+      let pack = {
+        uId: jsonProfile.id,
+        grade: this.grade
+      }
+
+      cancelChatAPI(pack).then(
+          (res) => {
+            //console.log(res)
+            let data = res.data
+            if (data.success) {
+              this.entries.unshift(data.data)
+              this.disableNew = false
+            }else {
+              this.$message.error(data.message)
+              this.disableInput = false
+              this.grade = 0
+            }
+          }
+      ).catch(
+          (error) => {
+            this.$message.error(error.message)
+            this.disableInput = false
+            this.grade = 0
+          }
+      )
+
+    },
+    Return() {
+      this.$router.push("/login")
     }
   },
   mounted() {
@@ -303,6 +387,7 @@ export default defineComponent({
     this.profileForm.email = jsonProfile.email
     this.profileForm.gender = jsonProfile.gender
     this.entryListLoad = true
+    this.disableInput = true
     getChatEntryAPI(jsonProfile.id).then(
         (res) => {
           console.log(res)
@@ -321,6 +406,30 @@ export default defineComponent({
           this.entryListLoad  = false
         }
     )
+    if (Cookies.get("JSESSIONID") != null) {
+      retriveChatAPI().then(
+          (res) => {
+            console.log(res)
+            let data = res.data
+            if (data.success) {
+              //this.entries = res.data.data
+              //this.entries.unshift(data.data)
+              this.items = data.data.conversations
+              this.disableInput = false
+              this.disableNew = true
+            }else {
+              //this.$message.error(data.message)
+            }
+            this.entryListLoad = false
+          }
+      ).catch(
+          (error) => {
+            this.$message.error(error.message)
+            // console.log(error)
+            this.entryListLoad  = false
+          }
+      )
+    }
   }
 });
 </script>

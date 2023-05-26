@@ -22,7 +22,7 @@
                       type="password">
             </el-input>
           </el-form-item>
-          <el-form-item prop="password2" >
+          <el-form-item prop="password2" :rules="rules.password2">
             <template v-slot:label>
               <span style="color:red">*</span>
               <span>重复密码</span>
@@ -84,7 +84,7 @@ export default {
         if (!reg.test(this.ruleForm.password)) {
           callback(new Error('密码为6-20位，且同时包含数字和字符'))
         }
-        this.$refs.ruleForm.validateField('password2')
+        this.$refs.ruleForm.validateField('password2', () => null)
         callback()
       }
     }
@@ -93,8 +93,9 @@ export default {
         callback(new Error('请重复输入密码'))
       } else if (this.ruleForm.password2 !== this.ruleForm.password) {
         callback(new Error('两次密码不一致'))
-        callback()
+
       }
+      callback()
 
     }
     const validateEmail = (rule, value, callback) => {

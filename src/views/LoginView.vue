@@ -83,8 +83,8 @@ export default defineComponent({
                     Cookies.set('name', this.ruleForm.account, 3)
                     Cookies.set('password', this.ruleForm.password, 3)
                   }else {
-                    Cookies.set('name', null, -1)
-                    Cookies.set('password', null, -1)
+                    Cookies.set('name', "", -1)
+                    Cookies.set('password', "", -1)
                   }
                   sessionStorage.set("profile", data.data)
                   this.$router.push({path: '/home'})
@@ -111,7 +111,7 @@ export default defineComponent({
     document.title = '登录'
     let name = Cookies.get('name')
     let password = Cookies.get('password')
-    if (name != null && password != null) {
+    if (name !== "" && password !== "" && name != null && password != null) {
       this.rememberMe = true
       this.ruleForm.account = name
       this.ruleForm.password = password
